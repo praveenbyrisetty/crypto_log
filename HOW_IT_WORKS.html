@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>How the Hash Chain Works — Visual Explainer</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #060612;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 26px;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    h1 span { color: #00ff88; }
+
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 48px;
+    }
+
+    /* ── SECTION ── */
+    .section {
+      max-width: 900px;
+      margin: 0 auto 56px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-desc {
+      color: #64748b;
+      font-size: 13px;
+      margin-bottom: 28px;
+      line-height: 1.7;
+    }
+
+    /* ── BLOCKS ── */
+    .chain {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .block-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      position: relative;
+    }
+
+    .block-row + .block-row { margin-top: 0; }
+
+    .arrow-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 60px;
+      flex-shrink: 0;
+    }
+
+    .arrow-line {
+      width: 2px;
+      flex: 1;
+      background: rgba(0,255,136,0.25);
+      min-height: 20px;
+    }
+
+    .arrow-head {
+      font-size: 20px;
+      color: #00ff88;
+      line-height: 1;
+      margin: 2px 0;
+    }
+
+    .arrow-label {
+      font-size: 9px;
+      color: #00ff88;
+      letter-spacing: 0.3px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      opacity: 0.7;
+      transform: rotate(90deg);
+      white-space: nowrap;
+      margin: 6px 0;
+    }
+
+    .block {
+      flex: 1;
+      border-radius: 14px;
+      padding: 20px 24px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+      margin: 10px 0;
+      transition: border-color 0.3s;
+      position: relative;
+    }
+
+    .block:hover { border-color: rgba(0,255,136,0.3); }
+
+    .block-index {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      font-size: 11px;
+      color: #475569;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .block-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .lbl-genesis { color: #00d4ff; }
+    .lbl-ok      { color: #00ff88; }
+    .lbl-fail    { color: #ff4455; }
+
+    .block-row-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .field-name {
+      font-size: 10px;
+      color: #475569;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .field-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #94a3b8;
+      background: rgba(0,0,0,0.25);
+      padding: 6px 10px;
+      border-radius: 6px;
+      word-break: break-all;
+    }
+
+    .field-value.highlight-green {
+      color: #00ff88;
+      background: rgba(0,255,136,0.06);
+      border: 1px solid rgba(0,255,136,0.2);
+    }
+
+    .field-value.highlight-blue {
+      color: #00d4ff;
+      background: rgba(0,212,255,0.06);
+      border: 1px solid rgba(0,212,255,0.2);
+    }
+
+    .field-value.highlight-red {
+      color: #ff4455;
+      background: rgba(255,68,85,0.06);
+      border: 1px solid rgba(255,68,85,0.2);
+    }
+
+    .field-value.highlight-yellow {
+      color: #ffcc00;
+      background: rgba(255,204,0,0.06);
+      border: 1px solid rgba(255,204,0,0.2);
+    }
+
+    .match-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-top: 4px;
+      width: fit-content;
+    }
+
+    .match-ok  { background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid rgba(0,255,136,0.2); }
+    .match-bad { background: rgba(255,68,85,0.1);  color: #ff4455; border: 1px solid rgba(255,68,85,0.2); }
+
+    /* ── FORMULA BOX ── */
+    .formula-box {
+      background: rgba(0,212,255,0.05);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 2;
+      color: #00d4ff;
+    }
+
+    .formula-box .comment { color: #475569; font-style: italic; font-family: 'Inter', sans-serif; font-size: 12px; }
+
+    /* ── TAMPERED SECTION ── */
+    .tamper-explainer {
+      max-width: 900px;
+      margin: 0 auto 56px;
+    }
+
+    .tamper-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ff4455;
+      margin-bottom: 6px;
+    }
+
+    .tamper-steps {
+      display: flex;
+      gap: 0;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .tamper-block {
+      flex: 1;
+      min-width: 220px;
+      border-radius: 14px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      margin: 8px;
+    }
+
+    .tamper-block.before { border-color: rgba(0,255,136,0.2); }
+    .tamper-block.after  { border-color: rgba(255,68,85,0.3); background: rgba(255,68,85,0.03); }
+    .tamper-block.result { border-color: rgba(255,204,0,0.3); background: rgba(255,204,0,0.02); }
+
+    .tb-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+
+    .before .tb-title { color: #00ff88; }
+    .after  .tb-title { color: #ff4455; }
+    .result .tb-title { color: #ffcc00; }
+
+    .tb-line {
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .tb-line .label { color: #475569; font-size: 10px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tb-line .val   { color: #94a3b8; }
+    .tb-line .val.green  { color: #00ff88; }
+    .tb-line .val.red    { color: #ff4455; }
+    .tb-line .val.yellow { color: #ffcc00; }
+
+    .arrow-between {
+      display: flex;
+      align-items: center;
+      font-size: 28px;
+      color: #475569;
+      margin: 20px 0;
+    }
+
+    /* ── SUMMARY BOX ── */
+    .summary-box {
+      max-width: 900px;
+      margin: 0 auto;
+      background: rgba(0,255,136,0.05);
+      border: 1px solid rgba(0,255,136,0.2);
+      border-radius: 16px;
+      padding: 30px 32px;
+    }
+
+    .summary-box h3 { font-size: 17px; color: #00ff88; margin-bottom: 18px; }
+
+    .summary-rows { display: flex; flex-direction: column; gap: 12px; }
+
+    .sum-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .sum-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .sum-text b { color: #fff; }
+    .sum-text { color: #94a3b8; }
+
+    /* divider */
+    hr { border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 32px auto; max-width: 900px; }
+  </style>
+</head>
+<body>
+
+  <h1>🔒 How the <span>Hash Chain</span> Works</h1>
+  <p class="subtitle">A plain-English visual explainer for the Tamper-Evident Logging System (Task 1)</p>
+
+  <!-- ── PART 1: THE FORMULA ── -->
+  <div class="section">
+    <div class="section-title">⚙️ Step 1 — How a "Stamp" (Hash) is made</div>
+    <div class="section-desc">
+      Each log entry has a <b>HASH</b> — its unique stamp. It is made by running all the entry's data through the SHA-256 algorithm.
+      The magic part: the <b>previous entry's HASH is mixed in</b>. This links every entry to its parent.
+    </div>
+    <div class="formula-box">
+      HASH = SHA256( <span style="color:#00ff88">prev_hash</span> + timestamp + event_type + description )<br>
+      <span class="comment">// Change ANY one of these → the HASH completely changes → chain breaks</span>
+    </div>
+  </div>
+
+  <!-- ── PART 2: INTACT CHAIN ── -->
+  <div class="section">
+    <div class="section-title">✅ Step 2 — A Normal, Untampered Chain</div>
+    <div class="section-desc">
+      Each block's <b>PREV HASH</b> (left column) is an exact copy of the block above's <b>HASH</b> (right column).
+      When the system verifies, it just checks: <em>"Do these two numbers match?"</em>
+    </div>
+    <div class="chain">
+
+      <!-- ROW 0: Genesis -->
+      <div class="block-row">
+        <div class="arrow-col"><div class="arrow-line" style="background:transparent"></div></div>
+        <div class="block">
+          <div class="block-index">Row #0</div>
+          <div class="block-label lbl-genesis">🔵 GENESIS BLOCK (System Start)</div>
+          <div class="block-row-inner">
+            <div class="field">
+              <div class="field-name">Description</div>
+              <div class="field-value">Genesis Block — chain initialized</div>
+            </div>
+            <div class="field">
+              <div class="field-name">Prev Hash (no parent → all zeros)</div>
+              <div class="field-value">0000000000000000000000000000000000000000000000000000000000000000</div>
+            </div>
+            <div class="field">
+              <div class="field-name">Hash (Row 0's own stamp) 👇 copied into Row 1</div>
+              <div class="field-value highlight-blue">08e35d57eb...ba57b1</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARROW 0→1 -->
+      <div class="block-row">
+        <div class="arrow-col">
+          <div class="arrow-line"></div>
+          <div class="arrow-head">▼</div>
+          <div class="arrow-label">Row 0's hash → Row 1's prev_hash</div>
+          <div class="arrow-line"></div>
+        </div>
+        <div style="flex:1"></div>
+      </div>
+
+      <!-- ROW 1 -->
+      <div class="block-row">
+        <div class="arrow-col"></div>
+        <div class="block">
+          <div class="block-index">Row #1</div>
+          <div class="block-label lbl-ok">✅ LOGIN SUCCESS</div>
+          <div class="block-row-inner">
+            <div class="field">
+              <div class="field-name">Description</div>
+              <div class="field-value">User 'admin' authenticated from 127.0.0.1</div>
+            </div>
+            <div class="field">
+              <div class="field-name">Prev Hash ← must equal Row 0's Hash</div>
+              <div class="field-value highlight-blue">08e35d57eb...ba57b1</div>
+            </div>
+            <div class="match-tag match-ok">✓ Matches Row 0's Hash — LINK VALID</div>
+            <div class="field" style="margin-top:6px">
+              <div class="field-name">Hash (Row 1's own stamp) 👇 copied into Row 2</div>
+              <div class="field-value highlight-green">10d7629918...6d564c</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARROW 1→2 -->
+      <div class="block-row">
+        <div class="arrow-col">
+          <div class="arrow-line"></div>
+          <div class="arrow-head">▼</div>
+          <div class="arrow-label">Row 1's hash → Row 2's prev_hash</div>
+          <div class="arrow-line"></div>
+        </div>
+        <div style="flex:1"></div>
+      </div>
+
+      <!-- ROW 2 -->
+      <div class="block-row">
+        <div class="arrow-col"></div>
+        <div class="block">
+          <div class="block-index">Row #2</div>
+          <div class="block-label lbl-ok">✅ LOGIN SUCCESS</div>
+          <div class="block-row-inner">
+            <div class="field">
+              <div class="field-name">Description</div>
+              <div class="field-value">User 'admin' authenticated again from 127.0.0.1</div>
+            </div>
+            <div class="field">
+              <div class="field-name">Prev Hash ← must equal Row 1's Hash</div>
+              <div class="field-value highlight-green">10d7629918...6d564c</div>
+            </div>
+            <div class="match-tag match-ok">✓ Matches Row 1's Hash — LINK VALID</div>
+            <div class="field" style="margin-top:6px">
+              <div class="field-name">Hash (Row 2's own stamp) 👇 copied into Row 3</div>
+              <div class="field-value" style="color:#a78bfa; background:rgba(167,139,250,0.06); border:1px solid rgba(167,139,250,0.2)">f381cd1449...fb0a49</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARROW 2→3 -->
+      <div class="block-row">
+        <div class="arrow-col">
+          <div class="arrow-line"></div>
+          <div class="arrow-head">▼</div>
+          <div class="arrow-label">Row 2's hash → Row 3's prev_hash</div>
+          <div class="arrow-line"></div>
+        </div>
+        <div style="flex:1"></div>
+      </div>
+
+      <!-- ROW 3 -->
+      <div class="block-row">
+        <div class="arrow-col"></div>
+        <div class="block">
+          <div class="block-index">Row #3</div>
+          <div class="block-label lbl-fail">❌ LOGIN FAILED</div>
+          <div class="block-row-inner">
+            <div class="field">
+              <div class="field-name">Description</div>
+              <div class="field-value">Failed attempt: user='admin' password='admin1234' from 127.0.0.1</div>
+            </div>
+            <div class="field">
+              <div class="field-name">Prev Hash ← must equal Row 2's Hash</div>
+              <div class="field-value" style="color:#a78bfa; background:rgba(167,139,250,0.06); border:1px solid rgba(167,139,250,0.2)">f381cd1449...fb0a49</div>
+            </div>
+            <div class="match-tag match-ok">✓ Matches Row 2's Hash — LINK VALID</div>
+            <div class="field" style="margin-top:6px">
+              <div class="field-name">Hash (Row 3's own stamp) 👇 copied into Row 4</div>
+              <div class="field-value highlight-yellow">9c9f8575f9...8fcc5f</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div style="text-align:center; margin-top:24px; font-size:15px; color:#00ff88; font-weight:700;">
+      ✅ All prev_hash values match the row above's hash → CHAIN INTACT
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── PART 3: TAMPERED CHAIN ── -->
+  <div class="tamper-explainer">
+    <div class="tamper-title">🔴 Step 3 — What happens when a Hacker edits Row 2?</div>
+    <div class="section-desc" style="margin-top:6px; margin-bottom:24px">
+      The hacker opens the JSON file and changes Row 2's description text to hide their tracks. Here's what happens next:
+    </div>
+
+    <div class="tamper-steps">
+
+      <div class="tamper-block before">
+        <div class="tb-title">📄 Row 2 — BEFORE (original)</div>
+        <div class="tb-line">
+          <span class="label">Description</span>
+          <span class="val">"Admin authenticated from 127.0.0.1"</span>
+        </div>
+        <div class="tb-line">
+          <span class="label">Hash (stamp)</span>
+          <span class="val green">f381cd1449...fb0a49</span>
+        </div>
+        <div class="tb-line">
+          <span class="label">Row 3's Prev Hash</span>
+          <span class="val green">f381cd1449...fb0a49 ✓ matches</span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;font-size:28px;color:#ff4455;margin:8px;">→</div>
+
+      <div class="tamper-block after">
+        <div class="tb-title">🔥 Row 2 — AFTER (hacker edits text)</div>
+        <div class="tb-line">
+          <span class="label">Description (changed!)</span>
+          <span class="val red">"[HACKER] Entry deleted — nothing to see"</span>
+        </div>
+        <div class="tb-line">
+          <span class="label">Hash (re-computed by system)</span>
+          <span class="val red">XXXXXX...NEWSTAMP ← completely different!</span>
+        </div>
+        <div class="tb-line">
+          <span class="label">Row 3's Prev Hash (still old)</span>
+          <span class="val red">f381cd1449...fb0a49 ✗ NO LONGER MATCHES!</span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;font-size:28px;color:#ffcc00;margin:8px;">→</div>
+
+      <div class="tamper-block result">
+        <div class="tb-title">🚨 Verification Result</div>
+        <div class="tb-line">
+          <span class="label">System checks</span>
+          <span class="val yellow">Row 3 prev_hash == Row 2 hash?</span>
+        </div>
+        <div class="tb-line">
+          <span class="val red">f381cd... ≠ XXXXXX...</span>
+        </div>
+        <br>
+        <div class="tb-line" style="font-size:14px; font-weight:700; color:#ff4455;">
+          🔴 TAMPERED at entry 3!
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── SUMMARY ── -->
+  <div class="summary-box">
+    <h3>📝 One-Sentence Summary for Each Rule</h3>
+    <div class="summary-rows">
+      <div class="sum-row">
+        <div class="sum-icon">✏️</div>
+        <div class="sum-text"><b>Text is edited:</b> The hash of that entry changes → the next entry's prev_hash no longer matches → detected as <b style="color:#ff4455">TAMPERED</b></div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-icon">🗑️</div>
+        <div class="sum-text"><b>Entry is deleted:</b> The next entry is now pointing to a prev_hash that no longer exists in the file → detected as <b style="color:#ff4455">CHAIN BROKEN</b></div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-icon">🔀</div>
+        <div class="sum-text"><b>Entries are swapped:</b> The time order of hashes is disrupted → detected as <b style="color:#ff4455">CHAIN BROKEN</b> at the swapped position</div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-icon">✅</div>
+        <div class="sum-text"><b>Nothing is changed:</b> Every prev_hash perfectly matches the hash of the row above it → <b style="color:#00ff88">CHAIN INTACT</b></div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
